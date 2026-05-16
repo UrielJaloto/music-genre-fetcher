@@ -1,0 +1,102 @@
+package infrastructure
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
+	"regexp"
+	"time"
+
+	"github.com/UrielJaloto/music-genre-fetcher/internal/domain"
+)
+
+type LastFMResponse struct {
+	TopTags struct {
+		Tag []struct {
+			Name string `json:"name"`
+		} `json:"tag"`
+	} `json:"toptags"`
+	Error int `json:"error"`
+}
+
+type LastFMProvider struct {
+	client *http.Client
+	apiKey string
+}
+
+func NewLastFMProvider(apiKey string) *LastFMProvider {
+	return &LastFMProvider{
+		client: &http.Client{Timeout: 10 * time.Second},
+		apiKey: apiKey,
+	}
+}
+
+func (p *LastFMProvider) FetchGenre(path, artist, title string) domain.Result {
+	genre := p.fetchTags(artist, title, "track.gettoptags")
+
+	if genre == "Not Found" {
+		genre = p.fetchTags(artist, "", "artist.gettoptags")
+	}
+
+	return domain.Result{Path: path, Artist: artist, Title: title, Genre: genre}
+}
+
+func (p *LastFMProvider) fetchTags(artist, title, method string) string {
+	baseURL := "http://ws.audioscrobbler.com/2.0/"
+
+	params := url.Values{}
+	params.Add("method", method)
+	params.Add("artist", artist)
+
+	if title != "" {
+		params.Add("track", title)
+	}
+
+	params.Add("api_key", p.apiKey)
+	params.Add("format", "json")
+	params.Add("autocorrect", "1")
+
+	fullURL := fmt.Sprintf("%s?%s", baseURL, params.Encode())
+
+	req, err := http.NewRequest("GET", fullURL, nil)
+	if err != nil {
+		return "Not Found"
+	}
+
+	req.Header.Set("User-Agent", "GenreFetcherGo/1.0.0")
+
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return "Not Found"
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 429 || resp.StatusCode == 503 {
+		time.Sleep(2 * time.Second)
+		return p.fetchTags(artist, title, method)
+	}
+
+	var lfmResp LastFMResponse
+	if err := json.NewDecoder(resp.Body).Decode(&lfmResp); err != nil {
+		return "Not Found"
+	}
+
+	if lfmResp.Error > 0 {
+		return "Not Found"
+	}
+
+	if len(lfmResp.TopTags.Tag) == 0 {
+		return "Unknown"
+	}
+
+	isYear := regexp.MustCompile(`^[0-9]{4}$`)
+
+	for _, tag := range lfmResp.TopTags.Tag {
+		if !isYear.MatchString(tag.Name) {
+			return tag.Name
+		}
+	}
+
+	return "Unknown"
+}
