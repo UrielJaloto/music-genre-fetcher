@@ -2,7 +2,6 @@ package infrastructure
 
 import (
 	"encoding/json"
-	"flag"
 	"os"
 	"time"
 
@@ -15,7 +14,7 @@ func NewLocalConfigProvider() *LocalConfigProvider {
 	return &LocalConfigProvider{}
 }
 
-func (p *LocalConfigProvider) Load(configPath string) (domain.Configuration, error) {
+func (p *LocalConfigProvider) Load(configPath, inputFilePath string) (domain.Configuration, error) {
 	var config domain.Configuration
 
 	data, err := os.ReadFile(configPath)
@@ -28,10 +27,7 @@ func (p *LocalConfigProvider) Load(configPath string) (domain.Configuration, err
 		return config, err
 	}
 
-	inputFile := flag.String("input", "env/input/mp3tag_data.txt", "")
-	flag.Parse()
-
-	config.InputFile = *inputFile
+	config.InputFile = inputFilePath
 	config.ExportPaths = map[string]string{
 		"json": "env/output/genre_results.json",
 		"csv":  "env/output/genre_results.csv",

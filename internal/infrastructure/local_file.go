@@ -46,33 +46,50 @@ func (r *LocalFileRepository) loadTXT(path string) ([]domain.Track, error) {
 	isFirstLine := true
 
 	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.TrimSpace(line) == "" {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
 			continue
 		}
 
 		if isFirstLine {
 			isFirstLine = false
-			if strings.Contains(strings.ToLower(line), "title") && strings.Contains(strings.ToLower(line), "artist") {
+			if r.isHeaderLine(line) {
 				continue
 			}
 		}
 
-		parts := strings.Split(line, "|||")
-		if len(parts) >= 3 {
-			tracks = append(tracks, domain.Track{
-				Path:   strings.TrimSpace(parts[0]),
-				Title:  strings.TrimSpace(parts[1]),
-				Artist: strings.TrimSpace(parts[2]),
-			})
-		} else if len(parts) == 2 {
-			tracks = append(tracks, domain.Track{
-				Path:   "",
-				Title:  strings.TrimSpace(parts[0]),
-				Artist: strings.TrimSpace(parts[1]),
-			})
+		track, valid := r.parseTrackLine(line)
+		if valid {
+			tracks = append(tracks, track)
 		}
 	}
 
 	return tracks, scanner.Err()
+}
+
+func (r *LocalFileRepository) isHeaderLine(line string) bool {
+	lowerLine := strings.ToLower(line)
+	return strings.Contains(lowerLine, "title") && strings.Contains(lowerLine, "artist")
+}
+
+func (r *LocalFileRepository) parseTrackLine(line string) (domain.Track, bool) {
+	parts := strings.Split(line, "|||")
+
+	if len(parts) >= 3 {
+		return domain.Track{
+			Path:   strings.TrimSpace(parts[0]),
+			Title:  strings.TrimSpace(parts[1]),
+			Artist: strings.TrimSpace(parts[2]),
+		}, true
+	}
+
+	if len(parts) == 2 {
+		return domain.Track{
+			Path:   "",
+			Title:  strings.TrimSpace(parts[0]),
+			Artist: strings.TrimSpace(parts[1]),
+		}, true
+	}
+
+	return domain.Track{}, false
 }

@@ -1,6 +1,10 @@
 package main
 
 import (
+	"flag"
+	"fmt"
+	"os"
+
 	"github.com/UrielJaloto/music-genre-fetcher/internal/infrastructure"
 	"github.com/UrielJaloto/music-genre-fetcher/internal/presentation"
 	"github.com/UrielJaloto/music-genre-fetcher/internal/services"
@@ -9,6 +13,9 @@ import (
 const ConfigFile = "env/config.json"
 
 func main() {
+	inputFile := flag.String("input", "env/input/mp3tag_data.txt", "")
+	flag.Parse()
+
 	ui := presentation.NewCLIUserInterface()
 	configLoader := infrastructure.NewLocalConfigProvider()
 	repo := infrastructure.NewLocalFileRepository()
@@ -30,5 +37,8 @@ func main() {
 
 	app := services.NewApplication(deps)
 
-	app.Execute(ConfigFile)
+	if err := app.Execute(ConfigFile, *inputFile); err != nil {
+		fmt.Printf("FATAL ERROR: %v\n", err)
+		os.Exit(1)
+	}
 }

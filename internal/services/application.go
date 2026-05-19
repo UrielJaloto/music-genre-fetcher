@@ -27,36 +27,45 @@ func NewApplication(deps ApplicationDependencies) *Application {
 	}
 }
 
-func (app *Application) Execute(configPath string) {
-	config, err := app.deps.ConfigLoader.Load(configPath)
+func (app *Application) Execute(configPath, inputFilePath string) error {
+	config, err := app.deps.ConfigLoader.Load(configPath, inputFilePath)
 	if err != nil {
-		app.deps.UI.ShowFatalError("Error loading configuration file", err)
-		return
+		return fmt.Errorf("error loading configuration file: %w", err)
 	}
 
 	if config.LastFMAPIKey == "" {
-		app.deps.UI.ShowFatalError("The API key (lastfm_api_key) is empty in the configuration file", errors.New("empty api key"))
-		return
+		return errors.New("the API key (lastfm_api_key) is empty in the configuration file")
 	}
 
 	app.deps.UI.ShowMessage("--- Starting Music Processing in Go ---")
 
 	tracks, err := app.deps.Repo.LoadMusic(config.InputFile)
 	if err != nil {
-		app.deps.UI.ShowFatalError("Error loading music", err)
-		return
+		return fmt.Errorf("error loading music: %w", err)
 	}
 
-	totalTracks := len(tracks)
-	app.deps.UI.ShowMessage(fmt.Sprintf("Total tracks loaded: %d", totalTracks))
+	app.deps.UI.ShowMessage(fmt.Sprintf("Total tracks loaded: %d", len(tracks)))
 
-	tracksChan := make(chan domain.Track, totalTracks)
-	resultsChan := make(chan domain.Result, totalTracks)
+	finalResults := app.processTracksConcurrently(tracks, config)
 
-	for _, t := range tracks {
-		tracksChan <- t
-	}
-	close(tracksChan)
+	app.deps.UI.ShowMessage(fmt.Sprintf("Total tracks processed: %d", len(finalResults)))
+
+	app.exportResults(finalResults, config.ExportPaths)
+
+	app.deps.UI.ShowMessage("--- Processing completed ---")
+	return nil
+}
+
+func (app *Application) processTracksConcurrently(tracks []domain.Track, config domain.Configuration) []domain.Result {
+	tracksChan := make(chan domain.Track)
+	resultsChan := make(chan domain.Result, len(tracks))
+
+	go func() {
+		for _, t := range tracks {
+			tracksChan <- t
+		}
+		close(tracksChan)
+	}()
 
 	var wg sync.WaitGroup
 
@@ -72,25 +81,32 @@ func (app *Application) Execute(configPath string) {
 		}()
 	}
 
-	wg.Wait()
-	close(resultsChan)
+	go func() {
+		wg.Wait()
+		close(resultsChan)
+	}()
 
 	var finalResults []domain.Result
 	for res := range resultsChan {
 		finalResults = append(finalResults, res)
 	}
 
-	app.deps.UI.ShowMessage(fmt.Sprintf("Total tracks processed: %d", len(finalResults)))
+	return finalResults
+}
 
-	for format, path := range config.ExportPaths {
-		if exporter, exists := app.deps.Exporters[format]; exists {
-			if err := exporter.Export(path, finalResults); err != nil {
-				app.deps.UI.ShowError(fmt.Sprintf("Error saving %s file", format), err)
-			} else {
-				app.deps.UI.ShowMessage(fmt.Sprintf("%s file saved: %s", format, path))
-			}
+func (app *Application) exportResults(results []domain.Result, paths map[string]string) {
+	for format, path := range paths {
+		exporter, exists := app.deps.Exporters[format]
+		if !exists {
+			continue
 		}
-	}
 
-	app.deps.UI.ShowMessage("--- Processing completed ---")
+		err := exporter.Export(path, results)
+		if err != nil {
+			app.deps.UI.ShowError(fmt.Sprintf("Error saving %s file", format), err)
+			continue
+		}
+
+		app.deps.UI.ShowMessage(fmt.Sprintf("%s file saved: %s", format, path))
+	}
 }

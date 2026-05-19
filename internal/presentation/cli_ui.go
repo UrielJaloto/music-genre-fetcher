@@ -2,7 +2,6 @@ package presentation
 
 import (
 	"fmt"
-	"os"
 )
 
 type CLIUserInterface struct{}
@@ -21,13 +20,4 @@ func (ui *CLIUserInterface) ShowError(message string, err error) {
 		return
 	}
 	fmt.Printf("ERROR: %s\n", message)
-}
-
-func (ui *CLIUserInterface) ShowFatalError(message string, err error) {
-	if err != nil {
-		fmt.Printf("FATAL: %s - %v\n", message, err)
-	} else {
-		fmt.Printf("FATAL: %s\n", message)
-	}
-	os.Exit(1)
 }

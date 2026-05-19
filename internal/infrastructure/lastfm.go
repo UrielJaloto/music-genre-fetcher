@@ -56,45 +56,51 @@ func (p *LastFMProvider) fetchTags(artist, title, apiKey, method string) string 
 	params.Add("autocorrect", "1")
 
 	fullURL := fmt.Sprintf("%s?%s", baseURL, params.Encode())
+	isYear := regexp.MustCompile(`^[0-9]{4}$`)
 
-	req, err := http.NewRequest("GET", fullURL, nil)
-	if err != nil {
-		return "Not Found"
-	}
+	for attempt := 0; attempt < 3; attempt++ {
+		req, err := http.NewRequest("GET", fullURL, nil)
+		if err != nil {
+			return "Not Found"
+		}
 
-	req.Header.Set("User-Agent", "GenreFetcherGo/1.0.0")
+		req.Header.Set("User-Agent", "GenreFetcherGo/1.0.0")
 
-	resp, err := p.client.Do(req)
-	if err != nil {
-		return "Not Found"
-	}
-	defer resp.Body.Close()
+		resp, err := p.client.Do(req)
+		if err != nil {
+			return "Not Found"
+		}
 
-	if resp.StatusCode == 429 || resp.StatusCode == 503 {
-		time.Sleep(2 * time.Second)
-		return p.fetchTags(artist, title, apiKey, method)
-	}
+		if resp.StatusCode == 429 || resp.StatusCode == 503 {
+			resp.Body.Close()
+			time.Sleep(2 * time.Second)
+			continue
+		}
 
-	var lfmResp LastFMResponse
-	if err := json.NewDecoder(resp.Body).Decode(&lfmResp); err != nil {
-		return "Not Found"
-	}
+		var lfmResp LastFMResponse
+		err = json.NewDecoder(resp.Body).Decode(&lfmResp)
+		resp.Body.Close()
 
-	if lfmResp.Error > 0 {
-		return "Not Found"
-	}
+		if err != nil {
+			return "Not Found"
+		}
 
-	if len(lfmResp.TopTags.Tag) == 0 {
+		if lfmResp.Error > 0 {
+			return "Not Found"
+		}
+
+		if len(lfmResp.TopTags.Tag) == 0 {
+			return "Unknown"
+		}
+
+		for _, tag := range lfmResp.TopTags.Tag {
+			if !isYear.MatchString(tag.Name) {
+				return tag.Name
+			}
+		}
+
 		return "Unknown"
 	}
 
-	isYear := regexp.MustCompile(`^[0-9]{4}$`)
-
-	for _, tag := range lfmResp.TopTags.Tag {
-		if !isYear.MatchString(tag.Name) {
-			return tag.Name
-		}
-	}
-
-	return "Unknown"
+	return "Not Found"
 }
