@@ -10,19 +10,19 @@ import (
 	"github.com/UrielJaloto/music-genre-fetcher/internal/domain"
 )
 
-type Exporter struct{}
-
-func NewExporter() *Exporter {
-	return &Exporter{}
-}
-
-func (e *Exporter) ensureDirectory(path string) error {
+func ensureDirectory(path string) error {
 	dir := filepath.Dir(path)
 	return os.MkdirAll(dir, os.ModePerm)
 }
 
-func (e *Exporter) ExportJSON(path string, data []domain.Result) error {
-	if err := e.ensureDirectory(path); err != nil {
+type JSONExporter struct{}
+
+func NewJSONExporter() *JSONExporter {
+	return &JSONExporter{}
+}
+
+func (e *JSONExporter) Export(path string, data []domain.Result) error {
+	if err := ensureDirectory(path); err != nil {
 		return err
 	}
 
@@ -33,8 +33,14 @@ func (e *Exporter) ExportJSON(path string, data []domain.Result) error {
 	return os.WriteFile(path, jsonData, 0644)
 }
 
-func (e *Exporter) ExportCSV(path string, data []domain.Result) error {
-	if err := e.ensureDirectory(path); err != nil {
+type CSVExporter struct{}
+
+func NewCSVExporter() *CSVExporter {
+	return &CSVExporter{}
+}
+
+func (e *CSVExporter) Export(path string, data []domain.Result) error {
+	if err := ensureDirectory(path); err != nil {
 		return err
 	}
 
@@ -61,8 +67,14 @@ func (e *Exporter) ExportCSV(path string, data []domain.Result) error {
 	return nil
 }
 
-func (e *Exporter) ExportTXT(path string, data []domain.Result) error {
-	if err := e.ensureDirectory(path); err != nil {
+type TXTExporter struct{}
+
+func NewTXTExporter() *TXTExporter {
+	return &TXTExporter{}
+}
+
+func (e *TXTExporter) Export(path string, data []domain.Result) error {
+	if err := ensureDirectory(path); err != nil {
 		return err
 	}
 

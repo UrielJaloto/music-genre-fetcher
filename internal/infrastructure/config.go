@@ -2,7 +2,9 @@ package infrastructure
 
 import (
 	"encoding/json"
+	"flag"
 	"os"
+	"time"
 
 	"github.com/UrielJaloto/music-genre-fetcher/internal/domain"
 )
@@ -13,14 +15,30 @@ func NewLocalConfigProvider() *LocalConfigProvider {
 	return &LocalConfigProvider{}
 }
 
-func (p *LocalConfigProvider) LoadConfiguration(path string) (domain.Configuration, error) {
+func (p *LocalConfigProvider) Load(configPath string) (domain.Configuration, error) {
 	var config domain.Configuration
 
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return config, err
 	}
 
 	err = json.Unmarshal(data, &config)
-	return config, err
+	if err != nil {
+		return config, err
+	}
+
+	inputFile := flag.String("input", "env/input/mp3tag_data.txt", "")
+	flag.Parse()
+
+	config.InputFile = *inputFile
+	config.ExportPaths = map[string]string{
+		"json": "env/output/genre_results.json",
+		"csv":  "env/output/genre_results.csv",
+		"txt":  "env/output/ai_results.txt",
+	}
+	config.Concurrency = 5
+	config.Pause = 200 * time.Millisecond
+
+	return config, nil
 }

@@ -22,27 +22,25 @@ type LastFMResponse struct {
 
 type LastFMProvider struct {
 	client *http.Client
-	apiKey string
 }
 
-func NewLastFMProvider(apiKey string) *LastFMProvider {
+func NewLastFMProvider() *LastFMProvider {
 	return &LastFMProvider{
 		client: &http.Client{Timeout: 10 * time.Second},
-		apiKey: apiKey,
 	}
 }
 
-func (p *LastFMProvider) FetchGenre(path, artist, title string) domain.Result {
-	genre := p.fetchTags(artist, title, "track.gettoptags")
+func (p *LastFMProvider) FetchGenre(path, artist, title, apiKey string) domain.Result {
+	genre := p.fetchTags(artist, title, apiKey, "track.gettoptags")
 
 	if genre == "Not Found" {
-		genre = p.fetchTags(artist, "", "artist.gettoptags")
+		genre = p.fetchTags(artist, "", apiKey, "artist.gettoptags")
 	}
 
 	return domain.Result{Path: path, Artist: artist, Title: title, Genre: genre}
 }
 
-func (p *LastFMProvider) fetchTags(artist, title, method string) string {
+func (p *LastFMProvider) fetchTags(artist, title, apiKey, method string) string {
 	baseURL := "http://ws.audioscrobbler.com/2.0/"
 
 	params := url.Values{}
@@ -53,7 +51,7 @@ func (p *LastFMProvider) fetchTags(artist, title, method string) string {
 		params.Add("track", title)
 	}
 
-	params.Add("api_key", p.apiKey)
+	params.Add("api_key", apiKey)
 	params.Add("format", "json")
 	params.Add("autocorrect", "1")
 
@@ -74,7 +72,7 @@ func (p *LastFMProvider) fetchTags(artist, title, method string) string {
 
 	if resp.StatusCode == 429 || resp.StatusCode == 503 {
 		time.Sleep(2 * time.Second)
-		return p.fetchTags(artist, title, method)
+		return p.fetchTags(artist, title, apiKey, method)
 	}
 
 	var lfmResp LastFMResponse
