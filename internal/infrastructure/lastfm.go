@@ -6,10 +6,13 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/UrielJaloto/music-genre-fetcher/internal/domain"
 )
+
+var isYearRegex = regexp.MustCompile(`^[0-9]{4}$`)
 
 type LastFMResponse struct {
 	TopTags struct {
@@ -56,7 +59,6 @@ func (p *LastFMProvider) fetchTags(artist, title, apiKey, method string) string 
 	params.Add("autocorrect", "1")
 
 	fullURL := fmt.Sprintf("%s?%s", baseURL, params.Encode())
-	isYear := regexp.MustCompile(`^[0-9]{4}$`)
 
 	for attempt := 0; attempt < 3; attempt++ {
 		req, err := http.NewRequest("GET", fullURL, nil)
@@ -68,13 +70,19 @@ func (p *LastFMProvider) fetchTags(artist, title, apiKey, method string) string 
 
 		resp, err := p.client.Do(req)
 		if err != nil {
-			return "Not Found"
+			time.Sleep(2 * time.Second)
+			continue
 		}
 
-		if resp.StatusCode == 429 || resp.StatusCode == 503 {
+		if resp.StatusCode == 429 || resp.StatusCode >= 500 {
 			resp.Body.Close()
 			time.Sleep(2 * time.Second)
 			continue
+		}
+
+		if resp.StatusCode >= 400 {
+			resp.Body.Close()
+			return "Not Found"
 		}
 
 		var lfmResp LastFMResponse
@@ -93,10 +101,19 @@ func (p *LastFMProvider) fetchTags(artist, title, apiKey, method string) string 
 			return "Unknown"
 		}
 
+		var validTags []string
 		for _, tag := range lfmResp.TopTags.Tag {
-			if !isYear.MatchString(tag.Name) {
-				return tag.Name
+			tagName := strings.TrimSpace(tag.Name)
+			if !isYearRegex.MatchString(tagName) {
+				validTags = append(validTags, tagName)
+				if len(validTags) == 3 {
+					break
+				}
 			}
+		}
+
+		if len(validTags) > 0 {
+			return strings.Join(validTags, ", ")
 		}
 
 		return "Unknown"
