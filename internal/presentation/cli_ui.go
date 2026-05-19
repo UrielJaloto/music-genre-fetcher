@@ -1,7 +1,10 @@
 package presentation
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"strings"
 )
 
 type CLIUserInterface struct{}
@@ -20,4 +23,11 @@ func (ui *CLIUserInterface) ShowError(message string, err error) {
 		return
 	}
 	fmt.Printf("ERROR: %s\n", message)
+}
+
+func (ui *CLIUserInterface) PromptInput(message string) string {
+	fmt.Print(message)
+	reader := bufio.NewReader(os.Stdin)
+	input, _ := reader.ReadString('\n')
+	return strings.TrimSpace(input)
 }

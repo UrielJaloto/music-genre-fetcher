@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
@@ -13,9 +12,6 @@ import (
 const ConfigFile = "env/config.json"
 
 func main() {
-	inputFile := flag.String("input", "env/input/mp3tag_data.txt", "")
-	flag.Parse()
-
 	ui := presentation.NewCLIUserInterface()
 	configLoader := infrastructure.NewLocalConfigProvider()
 	repo := infrastructure.NewLocalFileRepository()
@@ -37,7 +33,7 @@ func main() {
 
 	app := services.NewApplication(deps)
 
-	if err := app.Execute(ConfigFile, *inputFile); err != nil {
+	if err := app.Execute(ConfigFile); err != nil {
 		fmt.Printf("FATAL ERROR: %v\n", err)
 		os.Exit(1)
 	}

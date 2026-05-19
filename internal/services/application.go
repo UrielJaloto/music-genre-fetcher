@@ -27,8 +27,8 @@ func NewApplication(deps ApplicationDependencies) *Application {
 	}
 }
 
-func (app *Application) Execute(configPath, inputFilePath string) error {
-	config, err := app.deps.ConfigLoader.Load(configPath, inputFilePath)
+func (app *Application) Execute(configPath string) error {
+	config, err := app.deps.ConfigLoader.Load(configPath)
 	if err != nil {
 		return fmt.Errorf("error loading configuration file: %w", err)
 	}
@@ -36,6 +36,12 @@ func (app *Application) Execute(configPath, inputFilePath string) error {
 	if config.LastFMAPIKey == "" {
 		return errors.New("the API key (lastfm_api_key) is empty in the configuration file")
 	}
+
+	inputFile := app.deps.UI.PromptInput("Digite o caminho do arquivo de entrada (ou pressione Enter para usar env/input/mp3tag_data.txt): ")
+	if inputFile == "" {
+		inputFile = "env/input/mp3tag_data.txt"
+	}
+	config.InputFile = inputFile
 
 	app.deps.UI.ShowMessage("--- Starting Music Processing in Go ---")
 

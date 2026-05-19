@@ -14,7 +14,7 @@ func NewLocalConfigProvider() *LocalConfigProvider {
 	return &LocalConfigProvider{}
 }
 
-func (p *LocalConfigProvider) Load(configPath, inputFilePath string) (domain.Configuration, error) {
+func (p *LocalConfigProvider) Load(configPath string) (domain.Configuration, error) {
 	var config domain.Configuration
 
 	data, err := os.ReadFile(configPath)
@@ -27,14 +27,21 @@ func (p *LocalConfigProvider) Load(configPath, inputFilePath string) (domain.Con
 		return config, err
 	}
 
-	config.InputFile = inputFilePath
-	config.ExportPaths = map[string]string{
-		"json": "env/output/genre_results.json",
-		"csv":  "env/output/genre_results.csv",
-		"txt":  "env/output/ai_results.txt",
+	if len(config.ExportPaths) == 0 {
+		config.ExportPaths = map[string]string{
+			"json": "env/output/genre_results.json",
+			"csv":  "env/output/genre_results.csv",
+			"txt":  "env/output/ai_results.txt",
+		}
 	}
-	config.Concurrency = 5
-	config.Pause = 200 * time.Millisecond
+
+	if config.Concurrency <= 0 {
+		config.Concurrency = 5
+	}
+
+	if config.Pause <= 0 {
+		config.Pause = 200 * time.Millisecond
+	}
 
 	return config, nil
 }

@@ -51,7 +51,6 @@ func (e *CSVExporter) Export(path string, data []domain.Result) error {
 	defer csvFile.Close()
 
 	writer := csv.NewWriter(csvFile)
-	defer writer.Flush()
 
 	err = writer.Write([]string{"path", "artist", "title", "genre"})
 	if err != nil {
@@ -64,7 +63,9 @@ func (e *CSVExporter) Export(path string, data []domain.Result) error {
 			return err
 		}
 	}
-	return nil
+
+	writer.Flush()
+	return writer.Error()
 }
 
 type TXTExporter struct{}
