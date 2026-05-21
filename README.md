@@ -2,10 +2,6 @@
 
 A highly concurrent, SOLID-compliant CLI automation tool built in Go to fetch, curate, and catalog accurate music genres for local audio tracks using the Last.fm API.
 
-<p align="center">
-  <img src="https://s6.ezgif.com/tmp/ezgif-6ae82a565797634e.gif" width="450" height="110" alt="Music Visualizer">
-</p>
-
 ## Overview
 
 Managing metadata for local music libraries can be a tedious process. This project automates genre retrieval by querying track and artist details asynchronously, extracting the top 3 most accurate crowdsourced tags while intelligently filtering out irrelevant numerical metadata like release years.
@@ -50,33 +46,32 @@ If you prefer to compile the application yourself:
     go build -o mgf internal/cmd/mgf/main.go
 ## Configuration Setup
 
-Regardless of your installation method, the application requires a specific folder structure relative to the executable for safe I/O operations.
+The application requires a configuration file to store your API credentials.
 
-1. Create the following directory tree next to your executable:
-    ```text
-    env/
-    ├── config.json
-    ├── input/
-    └── output/
-2. Configure your Last.fm API credentials inside `env/config.json`:
+1. Create a folder named `env` next to your executable.
+2. Inside the `env` folder, create a `config.json` file with your Last.fm API key:
+
     ```json
     {
       "lastfm_api_key": "YOUR_LASTFM_API_KEY"
     }
+*Note: The application will automatically generate the required output directories to save your results during execution.*
+
 ## Usage
 
-Place your input files inside the `env/input/` directory.
+You can place your input files anywhere on your system.
 
 ### Supported Formats
 
-#### Structured TXT (`env/input/mp3tag_data.txt`)
+#### Structured TXT
 
 ```text
 Path|||Title|||Artist
 C:\Music\Rock\Queen\bohemian_rhapsody.mp3|||Bohemian Rhapsody|||Queen
+
 ```
 
-#### JSON (`env/input/data.json`)
+#### JSON
 
 ```json
 [
@@ -86,6 +81,7 @@ C:\Music\Rock\Queen\bohemian_rhapsody.mp3|||Bohemian Rhapsody|||Queen
     "artist": "Michael Jackson"
   }
 ]
+
 ```
 
 ### Execution
@@ -104,7 +100,7 @@ If using the downloaded binary:
 
 *(On Windows, just double-click the `.exe` or run `mgf.exe` in CMD/PowerShell).*
 
-The application will prompt you via terminal to specify your file path or let you press `Enter` to use the fallback default configuration.
+The application will prompt you via terminal to specify the absolute or relative path to your input file. You can also press `Enter` to use the fallback default configuration if you choose to place your file at `env/input/mp3tag_data.txt`.
 
 ## The Story Behind the Project
 
