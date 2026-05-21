@@ -2,10 +2,6 @@
 
 A highly concurrent, SOLID-compliant CLI automation tool built in Go to fetch, curate, and catalog accurate music genres for local audio tracks using the Last.fm API.
 
-<p align="center">
-  <img src="https://s6.ezgif.com/tmp/ezgif-6ae82a565797634e.gif" width="450" height="110" alt="Music Visualizer">
-</p>
-
 ## Overview
 
 Managing metadata for local music libraries can be a tedious process. This project automates genre retrieval by querying track and artist details asynchronously, extracting the top 3 most accurate crowdsourced tags while intelligently filtering out irrelevant numerical metadata like release years.
