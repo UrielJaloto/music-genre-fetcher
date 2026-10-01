@@ -1,12 +1,12 @@
 # 🎵 music-genre-fetcher
 
-A highly concurrent, SOLID-compliant CLI automation tool built in Go to fetch, curate, and catalog accurate music genres for local audio tracks using the Last.fm API.
+A concurrent CLI in Go that fills in missing genres for a local music library using the Last.fm API.
 
 ## Overview
 
-Managing metadata for local music libraries can be a tedious process. This project automates genre retrieval by querying track and artist details asynchronously, extracting the top 3 most accurate crowdsourced tags while intelligently filtering out irrelevant numerical metadata like release years.
+Tagging genres by hand across a large music library is tedious, so I built this to do it automatically. It queries track and artist details concurrently, keeps the top 3 crowdsourced tags and filters out noise like release years.
 
-The application is engineered for high throughput and reliability, functioning as a highly scalable, production-ready pipeline for metadata aggregation capable of resolving up to 1,500 tracks per minute while maintaining a memory footprint well under 15MB.
+It processes up to 1,500 tracks per minute using under 15 MB of memory.
 
 ## Key Features
 
